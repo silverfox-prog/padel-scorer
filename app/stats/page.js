@@ -177,9 +177,28 @@ function StatTable({ columns, rows, emptyMessage }) {
           }}
         >
           {row.map((cell, j) => (
-            <div key={j} style={{ fontWeight: j === 0 ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {cell}
-            </div>
+            <div key={j}>
+  {j === 0 ? (
+    <button
+      onClick={() => router.push(`/player/${encodeURIComponent(cell)}`)}
+      style={{
+        background: "none",
+        border: "none",
+        color: LINE,
+        cursor: "pointer",
+        fontWeight: 600,
+        textDecoration: "underline",
+        padding: 0,
+      }}
+    >
+      {cell}
+    </button>
+  ) : (
+    <div style={{ fontWeight: j === 0 ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      {cell}
+    </div>
+  )}
+</div>
           ))}
         </div>
       ))}
