@@ -16,6 +16,7 @@ export default function StatsPage() {
   const [h2hStats, setH2hStats] = useState([]);
   const [history, setHistory] = useState([]);
   const [tab, setTab] = useState("leaderboard");
+  const router = useRouter();
 
   useEffect(() => {
     if (!supabaseEnabled) {
