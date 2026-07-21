@@ -338,6 +338,7 @@ function TeamCard({ team, teamNames, state, pointName, isDeuce, onPoint, disable
 function AmericanoScorer({ session, persist, shareBar }) {
   const state = session.scoring_state;
   const stage = state.stage || "setup";
+  import { ScheduleView } from "../../../lib/scheduleView";
 
   const [numPlayers, setNumPlayers] = useState(state.players?.length || 4);
   const [playerInputs, setPlayerInputs] = useState(
@@ -595,7 +596,6 @@ function AmericanoScorer({ session, persist, shareBar }) {
             </button>
           </div>
         </div>
-
         <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap", justifyContent: "center" }}>
           {state.rounds.map((r, i) => (
             <button
