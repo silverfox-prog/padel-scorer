@@ -5,7 +5,6 @@ import { ArrowLeft } from "lucide-react";
 import { COURT_GREEN, LINE, CLAY } from "../../lib/ui";
 import { getAllPlayerStats, getPartnerStats, getHeadToHeadStats, getSessionHistory } from "../../lib/dataStore";
 import { supabaseEnabled } from "../../lib/supabaseClient";
-import { useRouter } from "next/navigation";
 
 export default function StatsPage() {
   const router = useRouter();
@@ -16,7 +15,6 @@ export default function StatsPage() {
   const [h2hStats, setH2hStats] = useState([]);
   const [history, setHistory] = useState([]);
   const [tab, setTab] = useState("leaderboard");
-  const router = useRouter();
 
   useEffect(() => {
     if (!supabaseEnabled) {
