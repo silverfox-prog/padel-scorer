@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash2, Eye } from "lucide-react";
 import { COURT_GREEN, LINE, CLAY } from "../../lib/ui";
-import { getSessionHistory, deleteSession } from "../../lib/dataStore";
-import { supabaseEnabled } from "../../lib/supabaseClient";
-import { supabase } from "../../lib/supabaseClient";
+import { getSessionHistory } from "../../lib/dataStore";
+import { supabase, supabaseEnabled } from "../../lib/supabaseClient";
 
 export default function SessionsPage() {
   const router = useRouter();
@@ -19,17 +18,7 @@ export default function SessionsPage() {
       setLoading(false);
       return;
     }
-  useEffect(() => {
-  console.log("Supabase enabled:", supabaseEnabled);
-  console.log("Supabase client:", supabase ? "✓ Exists" : "✗ Null");
-  
-  if (!supabaseEnabled) {
-    setError("Supabase not configured");
-    setLoading(false);
-    return;
-  }
-  // ... rest of the code
-}, []);
+
     (async () => {
       try {
         const data = await getSessionHistory(100);
@@ -42,18 +31,16 @@ export default function SessionsPage() {
   }, []);
 
   async function handleDelete(sessionId) {
-  if (!confirm("Delete this session? This cannot be undone.")) return;
-  try {
-    // Delete directly via supabase client instead of using dataStore
-    const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
-    if (error) throw error;
-    
-    setSessions(sessions.filter((s) => s.id !== sessionId));
-    setTimeout(() => window.location.reload(), 500);
-  } catch (e) {
-    alert("Failed to delete: " + e.message);
+    if (!confirm("Delete this session?")) return;
+    try {
+      const { error: deleteError } = await supabase.from("sessions").delete().eq("id", sessionId);
+      if (deleteError) throw deleteError;
+      
+      setSessions(sessions.filter((s) => s.id !== sessionId));
+    } catch (e) {
+      alert("Failed to delete: " + e.message);
+    }
   }
-}
 
   return (
     <div style={{ minHeight: "100vh", background: COURT_GREEN, color: LINE, fontFamily: "system-ui, sans-serif", padding: "20px 16px 40px" }}>
@@ -73,7 +60,7 @@ export default function SessionsPage() {
 
         {!loading && sessions.length === 0 && (
           <div style={{ textAlign: "center", opacity: 0.7, fontSize: 13.5, padding: 20 }}>
-            No sessions yet. Start a match to create one.
+            No sessions yet.
           </div>
         )}
 
@@ -114,36 +101,19 @@ export default function SessionsPage() {
                   </div>
                 </button>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => router.push(`/session/${session.id}`)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: CLAY,
-                      cursor: "pointer",
-                      padding: 8,
-                      display: "flex",
-                    }}
-                    title="View session"
-                  >
-                    <Eye size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(session.id)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#ffb4a8",
-                      cursor: "pointer",
-                      padding: 8,
-                      display: "flex",
-                    }}
-                    title="Delete session"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleDelete(session.id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#ffb4a8",
+                    cursor: "pointer",
+                    padding: 8,
+                    display: "flex",
+                  }}
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
             ))}
           </div>
