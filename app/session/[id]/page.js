@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { RotateCcw, Undo2, Settings2, Share2, Plus } from "lucide-react";
 import { ScheduleView } from "../../../lib/scheduleView";
 import {
@@ -30,6 +30,7 @@ import { saveRoundResult } from "../../../lib/dataStore";
 export default function SessionPage() {
   const params = useParams();
   const sessionId = params.id;
+  const router = useRouter();
 
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -107,11 +108,18 @@ export default function SessionPage() {
     return <CenteredMessage>Session not found.</CenteredMessage>;
   }
 
+  const router = useRouter();
+
   const ShareBar = (
-    <button onClick={copyLink} style={{ ...iconBtnStyle, gap: 6, width: "auto", padding: "8px 12px" }}>
-      <Share2 size={16} />
-      <span style={{ fontSize: 13, fontWeight: 600 }}>{copied ? "Copied!" : "Share"}</span>
-    </button>
+    <div style={{ display: "flex", gap: 8 }}>
+      <button onClick={() => router.push("/")} style={{ ...iconBtnStyle, gap: 6, width: "auto", padding: "8px 12px" }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>Home</span>
+      </button>
+      <button onClick={copyLink} style={{ ...iconBtnStyle, gap: 6, width: "auto", padding: "8px 12px" }}>
+        <Share2 size={16} />
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{copied ? "Copied!" : "Share"}</span>
+      </button>
+    </div>
   );
 
   if (session.mode === "classic") {
@@ -424,6 +432,10 @@ function AmericanoScorer({ session, persist, shareBar }) {
       scoring_state: { ...state, rounds, currentRoundIdx: nextIdx, stage: nextStage },
       status: isLast ? "final" : "active",
     });
+  function endSessionNow() {
+    if (!confirm("End this tournament now? Any unplayed rounds will be left incomplete, and final standings will be based on rounds played so far.")) return;
+    persist({ status: "final" });
+  }
     setCurrentRoundIdx(nextIdx);
     setInputScoreA("");
 
@@ -591,6 +603,9 @@ function AmericanoScorer({ session, persist, shareBar }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             {shareBar}
+            <button onClick={endSessionNow} style={{ ...secondaryBtnStyle, width: "auto", padding: "8px 12px", fontSize: 12.5 }}>
+              End Session
+            </button>
             <button onClick={resetAll} style={iconBtnStyle} aria-label="Reset">
               <RotateCcw size={18} />
             </button>
