@@ -108,8 +108,6 @@ export default function SessionPage() {
     return <CenteredMessage>Session not found.</CenteredMessage>;
   }
 
-  const router = useRouter();
-
   const ShareBar = (
     <div style={{ display: "flex", gap: 8 }}>
       <button onClick={() => router.push("/")} style={{ ...iconBtnStyle, gap: 6, width: "auto", padding: "8px 12px" }}>
