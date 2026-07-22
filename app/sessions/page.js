@@ -31,14 +31,16 @@ export default function SessionsPage() {
   }, []);
 
   async function handleDelete(sessionId) {
-    if (!confirm("Delete this session? This cannot be undone.")) return;
-    try {
-      await deleteSession(sessionId);
-      setSessions(sessions.filter((s) => s.id !== sessionId));
-    } catch (e) {
-      alert("Failed to delete: " + e.message);
-    }
+  if (!confirm("Delete this session? This cannot be undone.")) return;
+  try {
+    await deleteSession(sessionId);
+    setSessions(sessions.filter((s) => s.id !== sessionId));
+    // Force a page refresh to ensure the deletion is persistent
+    setTimeout(() => window.location.reload(), 500);
+  } catch (e) {
+    alert("Failed to delete: " + e.message);
   }
+}
 
   return (
     <div style={{ minHeight: "100vh", background: COURT_GREEN, color: LINE, fontFamily: "system-ui, sans-serif", padding: "20px 16px 40px" }}>
