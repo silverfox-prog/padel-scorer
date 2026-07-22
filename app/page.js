@@ -5,6 +5,7 @@ import { Users, Trophy, ChevronRight, BarChart3 } from "lucide-react";
 import { COURT_GREEN, CLAY, LINE, labelStyle, inputStyle } from "../lib/ui";
 import { supabaseEnabled } from "../lib/supabaseClient";
 import { createSession } from "../lib/dataStore";
+import { Trophy, Users, ChevronRight, BarChart3, Edit3 } from "lucide-react";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -103,7 +104,14 @@ export default function Home() {
           onClick={() => router.push("/stats")}
           disabled={creating}
         />
-
+          <div style={{ height: 14 }} />
+        <ModeCard
+          icon={<Edit3 size={22} />}
+          title="Sessions"
+          desc="View, edit, and delete past matches and tournaments"
+          onClick={() => router.push("/sessions")}
+          disabled={creating}
+        />
         {error && (
           <div style={{ color: "#ffb4a8", fontSize: 13, marginTop: 16, textAlign: "center", fontWeight: 600 }}>
             {error}
