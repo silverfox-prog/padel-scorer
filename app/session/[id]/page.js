@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { RotateCcw, Undo2, Settings2, Share2, Plus } from "lucide-react";
+import { ScheduleView } from "../../../lib/scheduleView";
 import {
   COURT_GREEN,
   CLAY,
@@ -338,7 +339,6 @@ function TeamCard({ team, teamNames, state, pointName, isDeuce, onPoint, disable
 function AmericanoScorer({ session, persist, shareBar }) {
   const state = session.scoring_state;
   const stage = state.stage || "setup";
-  import { ScheduleView } from "../../../lib/scheduleView";
 
   const [numPlayers, setNumPlayers] = useState(state.players?.length || 4);
   const [playerInputs, setPlayerInputs] = useState(
