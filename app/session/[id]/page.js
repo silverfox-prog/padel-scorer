@@ -430,10 +430,6 @@ function AmericanoScorer({ session, persist, shareBar }) {
       scoring_state: { ...state, rounds, currentRoundIdx: nextIdx, stage: nextStage },
       status: isLast ? "final" : "active",
     });
-  function endSessionNow() {
-    if (!confirm("End this tournament now? Any unplayed rounds will be left incomplete, and final standings will be based on rounds played so far.")) return;
-    persist({ status: "final" });
-  }
     setCurrentRoundIdx(nextIdx);
     setInputScoreA("");
 
@@ -447,6 +443,11 @@ function AmericanoScorer({ session, persist, shareBar }) {
       scoreA: completedRound.scoreA,
       scoreB: completedRound.scoreB,
     }).catch((e) => console.error("Failed to save round result:", e.message));
+  }
+
+  function endSessionNow() {
+    if (!confirm("End this tournament now? Any unplayed rounds will be left incomplete, and final standings will be based on rounds played so far.")) return;
+    persist({ status: "final" });
   }
 
   function goToRound(i) {
