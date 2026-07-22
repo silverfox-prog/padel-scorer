@@ -1,11 +1,10 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Trophy, ChevronRight, BarChart3 } from "lucide-react";
+import { Trophy, Users, ChevronRight, BarChart3, Edit3 } from "lucide-react";
 import { COURT_GREEN, CLAY, LINE, labelStyle, inputStyle } from "../lib/ui";
 import { supabaseEnabled } from "../lib/supabaseClient";
 import { createSession } from "../lib/dataStore";
-import { Trophy, Users, ChevronRight, BarChart3, Edit3 } from "lucide-react";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
