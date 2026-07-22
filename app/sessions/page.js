@@ -5,6 +5,7 @@ import { ArrowLeft, Trash2, Eye } from "lucide-react";
 import { COURT_GREEN, LINE, CLAY } from "../../lib/ui";
 import { getSessionHistory, deleteSession } from "../../lib/dataStore";
 import { supabaseEnabled } from "../../lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 export default function SessionsPage() {
   const router = useRouter();
@@ -33,13 +34,13 @@ export default function SessionsPage() {
   async function handleDelete(sessionId) {
   if (!confirm("Delete this session? This cannot be undone.")) return;
   try {
-    console.log("Deleting session:", sessionId);
-    await deleteSession(sessionId);
-    console.log("Delete succeeded");
+    // Delete directly via supabase client instead of using dataStore
+    const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
+    if (error) throw error;
+    
     setSessions(sessions.filter((s) => s.id !== sessionId));
     setTimeout(() => window.location.reload(), 500);
   } catch (e) {
-    console.error("Delete error:", e);
     alert("Failed to delete: " + e.message);
   }
 }
