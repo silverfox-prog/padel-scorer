@@ -19,7 +19,17 @@ export default function SessionsPage() {
       setLoading(false);
       return;
     }
-
+  useEffect(() => {
+  console.log("Supabase enabled:", supabaseEnabled);
+  console.log("Supabase client:", supabase ? "✓ Exists" : "✗ Null");
+  
+  if (!supabaseEnabled) {
+    setError("Supabase not configured");
+    setLoading(false);
+    return;
+  }
+  // ... rest of the code
+}, []);
     (async () => {
       try {
         const data = await getSessionHistory(100);
