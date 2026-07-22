@@ -33,11 +33,13 @@ export default function SessionsPage() {
   async function handleDelete(sessionId) {
   if (!confirm("Delete this session? This cannot be undone.")) return;
   try {
+    console.log("Deleting session:", sessionId);
     await deleteSession(sessionId);
+    console.log("Delete succeeded");
     setSessions(sessions.filter((s) => s.id !== sessionId));
-    // Force a page refresh to ensure the deletion is persistent
     setTimeout(() => window.location.reload(), 500);
   } catch (e) {
+    console.error("Delete error:", e);
     alert("Failed to delete: " + e.message);
   }
 }
