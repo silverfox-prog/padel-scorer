@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, Users, ChevronRight, BarChart3, Edit3 } from "lucide-react";
+import { Users, Trophy, ChevronRight, BarChart3, Edit3 } from "lucide-react";
 import { COURT_GREEN, CLAY, LINE, labelStyle, inputStyle } from "../lib/ui";
 import { supabaseEnabled } from "../lib/supabaseClient";
 import { createSession } from "../lib/dataStore";
+import { requireUnlock } from "../lib/auth";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -15,8 +16,11 @@ export default function Home() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [playedOn, setPlayedOn] = useState(todayIso());
+  const [sessionLabel, setSessionLabel] = useState("");
 
   async function handleCreate(mode) {
+    if (!requireUnlock()) return;
+
     setCreating(true);
     setError("");
 
@@ -33,7 +37,13 @@ export default function Home() {
           ? { server: "A", points: { A: 0, B: 0 }, games: { A: 0, B: 0 }, sets: [], tiebreak: null, matchWinner: null, needsSetup: true }
           : { stage: "setup", players: [], rounds: [], scoringMode: "fixed", target: 21 };
 
-      const session = await createSession({ mode, config, playedOn, scoringState });
+      const session = await createSession({
+        mode,
+        config,
+        playedOn,
+        scoringState,
+        label: sessionLabel.trim() || null,
+      });
       router.push(`/session/${session.id}`);
     } catch (e) {
       setError(e.message || "Failed to create session");
@@ -78,6 +88,14 @@ export default function Home() {
             onChange={(e) => setPlayedOn(e.target.value)}
             style={{ ...inputStyle, marginTop: 6 }}
           />
+          <span style={{ ...labelStyle, marginTop: 12, display: "block" }}>Session name (optional)</span>
+          <input
+            type="text"
+            value={sessionLabel}
+            onChange={(e) => setSessionLabel(e.target.value)}
+            placeholder="e.g. Tuesday night padel, or Test"
+            style={{ ...inputStyle, marginTop: 6 }}
+          />
         </div>
 
         <ModeCard
@@ -103,7 +121,7 @@ export default function Home() {
           onClick={() => router.push("/stats")}
           disabled={creating}
         />
-          <div style={{ height: 14 }} />
+        <div style={{ height: 14 }} />
         <ModeCard
           icon={<Edit3 size={22} />}
           title="Sessions"
@@ -111,6 +129,7 @@ export default function Home() {
           onClick={() => router.push("/sessions")}
           disabled={creating}
         />
+
         {error && (
           <div style={{ color: "#ffb4a8", fontSize: 13, marginTop: 16, textAlign: "center", fontWeight: 600 }}>
             {error}
