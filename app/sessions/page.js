@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, Trash2, Eye, Pencil, CheckCircle2 } from "lucide-react";
 import { COURT_GREEN, LINE, CLAY } from "../../lib/ui";
 import { getSessionHistory } from "../../lib/dataStore";
 import { supabase, supabaseEnabled } from "../../lib/supabaseClient";
@@ -41,6 +41,40 @@ export default function SessionsPage() {
       setSessions(sessions.filter((s) => s.id !== sessionId));
     } catch (e) {
       alert("Failed to delete: " + e.message);
+    }
+  }
+
+  async function handleRename(session) {
+    if (!requireUnlock()) return;
+    const input = prompt("Session name:", session.label || "");
+    if (input === null) return; // cancelled
+    const newLabel = input.trim() || null;
+    try {
+      const { error: updateError } = await supabase
+        .from("sessions")
+        .update({ label: newLabel })
+        .eq("id", session.id);
+      if (updateError) throw updateError;
+
+      setSessions(sessions.map((s) => (s.id === session.id ? { ...s, label: newLabel } : s)));
+    } catch (e) {
+      alert("Failed to rename: " + e.message);
+    }
+  }
+
+  async function handleFinish(session) {
+    if (!requireUnlock()) return;
+    if (!confirm("Mark this session as finished? Any unplayed rounds will be left as-is.")) return;
+    try {
+      const { error: updateError } = await supabase
+        .from("sessions")
+        .update({ status: "final" })
+        .eq("id", session.id);
+      if (updateError) throw updateError;
+
+      setSessions(sessions.map((s) => (s.id === session.id ? { ...s, status: "final" } : s)));
+    } catch (e) {
+      alert("Failed to finish session: " + e.message);
     }
   }
 
@@ -109,6 +143,36 @@ export default function SessionsPage() {
                 </button>
 
                 <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => handleRename(session)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: CLAY,
+                      cursor: "pointer",
+                      padding: 8,
+                      display: "flex",
+                    }}
+                    title="Rename session"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  {session.status !== "final" && (
+                    <button
+                      onClick={() => handleFinish(session)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#8fd4a8",
+                        cursor: "pointer",
+                        padding: 8,
+                        display: "flex",
+                      }}
+                      title="Mark as finished"
+                    >
+                      <CheckCircle2 size={18} />
+                    </button>
+                  )}
                   <button
                     onClick={() => router.push(`/session/${session.id}`)}
                     style={{
