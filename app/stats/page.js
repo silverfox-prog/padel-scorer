@@ -91,6 +91,7 @@ export default function StatsPage() {
               p.total_points,
             ])}
             emptyMessage="No games recorded yet."
+            clickableNames
           />
         )}
 
@@ -154,7 +155,9 @@ export default function StatsPage() {
   );
 }
 
-function StatTable({ columns, rows, emptyMessage }) {
+function StatTable({ columns, rows, emptyMessage, clickableNames }) {
+  const router = useRouter();
+
   if (rows.length === 0) {
     return <div style={{ textAlign: "center", opacity: 0.7, fontSize: 13.5, padding: 20 }}>{emptyMessage}</div>;
   }
@@ -178,27 +181,28 @@ function StatTable({ columns, rows, emptyMessage }) {
         >
           {row.map((cell, j) => (
             <div key={j}>
-  {j === 0 ? (
-    <button
-      onClick={() => router.push(`/player/${encodeURIComponent(cell)}`)}
-      style={{
-        background: "none",
-        border: "none",
-        color: LINE,
-        cursor: "pointer",
-        fontWeight: 600,
-        textDecoration: "underline",
-        padding: 0,
-      }}
-    >
-      {cell}
-    </button>
-  ) : (
-    <div style={{ fontWeight: j === 0 ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-      {cell}
-    </div>
-  )}
-</div>
+              {j === 0 && clickableNames ? (
+                <button
+                  onClick={() => router.push(`/player/${encodeURIComponent(cell)}`)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: LINE,
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    textDecoration: "underline",
+                    padding: 0,
+                    fontSize: 13.5,
+                  }}
+                >
+                  {cell}
+                </button>
+              ) : (
+                <div style={{ fontWeight: j === 0 ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {cell}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       ))}
