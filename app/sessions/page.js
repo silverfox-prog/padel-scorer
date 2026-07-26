@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Eye, Pencil, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Trash2, Eye, Pencil, CheckCircle2, ChevronDown, ChevronRight } from "lucide-react";
 import { COURT_GREEN, LINE, CLAY } from "../../lib/ui";
-import { getSessionHistory } from "../../lib/dataStore";
+import { getSessionHistory, getSessionRoundsWithNames } from "../../lib/dataStore";
 import { supabase, supabaseEnabled } from "../../lib/supabaseClient";
 import { requireUnlock } from "../../lib/auth";
 
@@ -12,6 +12,9 @@ export default function SessionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sessions, setSessions] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
+  const [roundsBySession, setRoundsBySession] = useState({});
+  const [roundsLoading, setRoundsLoading] = useState(false);
 
   useEffect(() => {
     if (!supabaseEnabled) {
@@ -31,6 +34,24 @@ export default function SessionsPage() {
     })();
   }, []);
 
+  async function toggleExpand(sessionId) {
+    if (expandedId === sessionId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(sessionId);
+    if (!roundsBySession[sessionId]) {
+      setRoundsLoading(true);
+      try {
+        const rounds = await getSessionRoundsWithNames(sessionId);
+        setRoundsBySession((prev) => ({ ...prev, [sessionId]: rounds }));
+      } catch (e) {
+        setRoundsBySession((prev) => ({ ...prev, [sessionId]: [] }));
+      }
+      setRoundsLoading(false);
+    }
+  }
+
   async function handleDelete(sessionId) {
     if (!requireUnlock()) return;
     if (!confirm("Delete this session?")) return;
@@ -47,7 +68,7 @@ export default function SessionsPage() {
   async function handleRename(session) {
     if (!requireUnlock()) return;
     const input = prompt("Session name:", session.label || "");
-    if (input === null) return; // cancelled
+    if (input === null) return;
     const newLabel = input.trim() || null;
     try {
       const { error: updateError } = await supabase
@@ -103,105 +124,153 @@ export default function SessionsPage() {
         {!loading && sessions.length > 0 && (
           <div style={{ background: "rgba(244,239,230,0.08)", borderRadius: 12, overflow: "hidden" }}>
             {sessions.map((session, i) => (
-              <div
-                key={session.id}
-                style={{
-                  padding: "12px 16px",
-                  borderBottom: i < sessions.length - 1 ? "1px solid rgba(244,239,230,0.1)" : "none",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  justifyContent: "space-between",
-                }}
-              >
-                <button
-                  onClick={() => router.push(`/session/${session.id}`)}
+              <div key={session.id} style={{ borderBottom: i < sessions.length - 1 ? "1px solid rgba(244,239,230,0.1)" : "none" }}>
+                <div
                   style={{
-                    flex: 1,
-                    background: "none",
-                    border: "none",
-                    color: LINE,
-                    textAlign: "left",
-                    cursor: "pointer",
-                    padding: 0,
+                    padding: "12px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    justifyContent: "space-between",
                   }}
                 >
-                  <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
-                    {session.played_on}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, textTransform: session.label ? "none" : "capitalize" }}>
-                    {session.label ? session.label : session.mode}
-                  </div>
-                  {session.label && (
-                    <div style={{ fontSize: 11, opacity: 0.55, marginTop: 2, textTransform: "capitalize" }}>
-                      {session.mode}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 11, opacity: 0.5, marginTop: 2, textTransform: "uppercase" }}>
-                    {session.status}
-                  </div>
-                </button>
-
-                <div style={{ display: "flex", gap: 8 }}>
                   <button
-                    onClick={() => handleRename(session)}
+                    onClick={() => toggleExpand(session.id)}
                     style={{
+                      flex: 1,
                       background: "none",
                       border: "none",
-                      color: CLAY,
+                      color: LINE,
+                      textAlign: "left",
                       cursor: "pointer",
-                      padding: 8,
+                      padding: 0,
                       display: "flex",
+                      alignItems: "flex-start",
+                      gap: 8,
                     }}
-                    title="Rename session"
                   >
-                    <Pencil size={18} />
+                    {expandedId === session.id ? (
+                      <ChevronDown size={16} style={{ marginTop: 3, flexShrink: 0, opacity: 0.6 }} />
+                    ) : (
+                      <ChevronRight size={16} style={{ marginTop: 3, flexShrink: 0, opacity: 0.6 }} />
+                    )}
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
+                        {session.played_on}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 600, textTransform: session.label ? "none" : "capitalize" }}>
+                        {session.label ? session.label : session.mode}
+                      </div>
+                      {session.label && (
+                        <div style={{ fontSize: 11, opacity: 0.55, marginTop: 2, textTransform: "capitalize" }}>
+                          {session.mode}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 11, opacity: 0.5, marginTop: 2, textTransform: "uppercase" }}>
+                        {session.status}
+                      </div>
+                    </div>
                   </button>
-                  {session.status !== "final" && (
+
+                  <div style={{ display: "flex", gap: 8 }}>
                     <button
-                      onClick={() => handleFinish(session)}
+                      onClick={() => handleRename(session)}
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#8fd4a8",
+                        color: CLAY,
                         cursor: "pointer",
                         padding: 8,
                         display: "flex",
                       }}
-                      title="Mark as finished"
+                      title="Rename session"
                     >
-                      <CheckCircle2 size={18} />
+                      <Pencil size={18} />
                     </button>
-                  )}
-                  <button
-                    onClick={() => router.push(`/session/${session.id}`)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: CLAY,
-                      cursor: "pointer",
-                      padding: 8,
-                      display: "flex",
-                    }}
-                    title="View session"
-                  >
-                    <Eye size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(session.id)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#ffb4a8",
-                      cursor: "pointer",
-                      padding: 8,
-                      display: "flex",
-                    }}
-                    title="Delete session"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                    {session.status !== "final" && (
+                      <button
+                        onClick={() => handleFinish(session)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#8fd4a8",
+                          cursor: "pointer",
+                          padding: 8,
+                          display: "flex",
+                        }}
+                        title="Mark as finished"
+                      >
+                        <CheckCircle2 size={18} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => router.push(`/session/${session.id}`)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: CLAY,
+                        cursor: "pointer",
+                        padding: 8,
+                        display: "flex",
+                      }}
+                      title="View session"
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(session.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#ffb4a8",
+                        cursor: "pointer",
+                        padding: 8,
+                        display: "flex",
+                      }}
+                      title="Delete session"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
+
+                {expandedId === session.id && (
+                  <div style={{ padding: "0 16px 14px 40px" }}>
+                    {roundsLoading && !roundsBySession[session.id] ? (
+                      <div style={{ fontSize: 12.5, opacity: 0.6 }}>Loading rounds…</div>
+                    ) : (roundsBySession[session.id] || []).length === 0 ? (
+                      <div style={{ fontSize: 12.5, opacity: 0.6 }}>No rounds recorded yet.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {roundsBySession[session.id].map((round) => (
+                          <div
+                            key={round.id}
+                            style={{
+                              background: "rgba(244,239,230,0.06)",
+                              borderRadius: 8,
+                              padding: "8px 12px",
+                              fontSize: 12.5,
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                              <div style={{ opacity: 0.85 }}>
+                                {(round.team_a_names || []).join(" & ")} vs {(round.team_b_names || []).join(" & ")}
+                              </div>
+                              <div style={{ fontWeight: 700, flexShrink: 0 }}>
+                                {round.score_a != null ? `${round.score_a} – ${round.score_b}` : "—"}
+                              </div>
+                            </div>
+                            {round.sit_out_names && round.sit_out_names.length > 0 && (
+                              <div style={{ opacity: 0.55, fontSize: 11, marginTop: 2 }}>
+                                Sitting out: {round.sit_out_names.join(", ")}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
