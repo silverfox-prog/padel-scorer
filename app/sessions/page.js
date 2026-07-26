@@ -5,6 +5,7 @@ import { ArrowLeft, Trash2, Eye } from "lucide-react";
 import { COURT_GREEN, LINE, CLAY } from "../../lib/ui";
 import { getSessionHistory } from "../../lib/dataStore";
 import { supabase, supabaseEnabled } from "../../lib/supabaseClient";
+import { requireUnlock } from "../../lib/auth";
 
 export default function SessionsPage() {
   const router = useRouter();
@@ -31,11 +32,12 @@ export default function SessionsPage() {
   }, []);
 
   async function handleDelete(sessionId) {
+    if (!requireUnlock()) return;
     if (!confirm("Delete this session?")) return;
     try {
       const { error: deleteError } = await supabase.from("sessions").delete().eq("id", sessionId);
       if (deleteError) throw deleteError;
-      
+
       setSessions(sessions.filter((s) => s.id !== sessionId));
     } catch (e) {
       alert("Failed to delete: " + e.message);
@@ -93,27 +95,49 @@ export default function SessionsPage() {
                   <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
                     {session.played_on}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, textTransform: "capitalize" }}>
-                    {session.mode}
+                  <div style={{ fontSize: 14, fontWeight: 600, textTransform: session.label ? "none" : "capitalize" }}>
+                    {session.label ? session.label : session.mode}
                   </div>
+                  {session.label && (
+                    <div style={{ fontSize: 11, opacity: 0.55, marginTop: 2, textTransform: "capitalize" }}>
+                      {session.mode}
+                    </div>
+                  )}
                   <div style={{ fontSize: 11, opacity: 0.5, marginTop: 2, textTransform: "uppercase" }}>
                     {session.status}
                   </div>
                 </button>
 
-                <button
-                  onClick={() => handleDelete(session.id)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#ffb4a8",
-                    cursor: "pointer",
-                    padding: 8,
-                    display: "flex",
-                  }}
-                >
-                  <Trash2 size={18} />
-                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => router.push(`/session/${session.id}`)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: CLAY,
+                      cursor: "pointer",
+                      padding: 8,
+                      display: "flex",
+                    }}
+                    title="View session"
+                  >
+                    <Eye size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(session.id)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#ffb4a8",
+                      cursor: "pointer",
+                      padding: 8,
+                      display: "flex",
+                    }}
+                    title="Delete session"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
