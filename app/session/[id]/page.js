@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { RotateCcw, Undo2, Settings2, Share2, Plus } from "lucide-react";
 import { ScheduleView } from "../../../lib/scheduleView";
+import { PlayerSwapModal } from "../../../lib/playerSwap";
 import {
   COURT_GREEN,
   CLAY,
@@ -38,7 +39,6 @@ export default function SessionPage() {
   const [copied, setCopied] = useState(false);
   const savingRef = useRef(false);
 
-  // Initial load
   useEffect(() => {
     if (!supabaseEnabled) {
       setLoadError("Supabase isn't configured. Add env vars and redeploy.");
@@ -61,7 +61,6 @@ export default function SessionPage() {
     };
   }, [sessionId]);
 
-  // Realtime subscription
   useEffect(() => {
     if (!supabaseEnabled || !sessionId) return;
     const channel = supabase
@@ -70,7 +69,6 @@ export default function SessionPage() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
         (payload) => {
-          // Avoid clobbering our own in-flight optimistic update
           if (savingRef.current) return;
           setSession(payload.new);
         }
@@ -174,10 +172,7 @@ function ClassicScorer({ session, persist, shareBar }) {
       }).catch((e) => console.error("Failed to save match result:", e.message));
     }
   }
-  function handleUndo() {
-    // Undo isn't trivial with server-synced state (no history stored); offer reset-of-point-only
-    // fallback: not implemented server-side history, so disable if nothing to undo.
-  }
+  function handleUndo() {}
   function handleReset() {
     const next = initClassicState({ goldenPoint: state.goldenPoint, teamNames: state.teamNames });
     persist({ scoring_state: next, status: "active" });
@@ -278,6 +273,7 @@ function ClassicScorer({ session, persist, shareBar }) {
   );
 }
 
+
 function SetsTable({ state, teamNames }) {
   const setCols = [...state.sets.map((s) => s), { A: state.games.A, B: state.games.B, inProgress: true }];
   return (
@@ -356,6 +352,7 @@ function AmericanoScorer({ session, persist, shareBar }) {
   const [inputScoreA, setInputScoreA] = useState("");
   const [error, setError] = useState("");
   const [addRoundsCount, setAddRoundsCount] = useState(4);
+  const [swapTarget, setSwapTarget] = useState(null);
 
   function updateNumPlayers(n) {
     setNumPlayers(n);
@@ -471,6 +468,30 @@ function AmericanoScorer({ session, persist, shareBar }) {
       scoring_state: { stage: "setup", players: [], rounds: [], scoringMode: "fixed", target: 21 },
       status: "active",
     });
+  }
+
+  function applySwap(newName) {
+    if (!swapTarget) return;
+    const rounds = [...state.rounds];
+    const round = { ...rounds[currentRoundIdx] };
+
+    if (swapTarget.team === "A") {
+      const teamA = [...round.teamA];
+      teamA[swapTarget.index] = newName;
+      round.teamA = teamA;
+    } else if (swapTarget.team === "B") {
+      const teamB = [...round.teamB];
+      teamB[swapTarget.index] = newName;
+      round.teamB = teamB;
+    } else if (swapTarget.team === "sitOut") {
+      const sitOut = [...round.sitOut];
+      sitOut[swapTarget.index] = newName;
+      round.sitOut = sitOut;
+    }
+
+    rounds[currentRoundIdx] = round;
+    persist({ scoring_state: { ...state, rounds } });
+    setSwapTarget(null);
   }
 
   if (stage === "setup") {
@@ -634,16 +655,49 @@ function AmericanoScorer({ session, persist, shareBar }) {
 
         <div style={{ background: "rgba(244,239,230,0.08)", borderRadius: 14, padding: 18, marginBottom: 16 }}>
           {round.sitOut.length > 0 && (
-            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 10, textAlign: "center" }}>Sitting out: {round.sitOut.join(", ")}</div>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 10, textAlign: "center" }}>
+              Sitting out:{" "}
+              {round.sitOut.map((name, i) => (
+                <span key={i}>
+                  <button
+                    onClick={() => setSwapTarget({ team: "sitOut", index: i })}
+                    style={{ background: "none", border: "none", color: LINE, textDecoration: "underline dotted", cursor: "pointer", fontSize: 12, padding: 0 }}
+                  >
+                    {name}
+                  </button>
+                  {i < round.sitOut.length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </div>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 10 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{teamAName}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 4 }}>
+                {round.teamA.map((name, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSwapTarget({ team: "A", index: i })}
+                    style={{ background: "none", border: "none", color: LINE, textDecoration: "underline dotted", cursor: "pointer", fontSize: 14, fontWeight: 700, padding: 0 }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
               <div style={{ fontSize: 40, fontWeight: 800 }}>{round.scoreA ?? 0}</div>
             </div>
             <div style={{ fontSize: 13, opacity: 0.5 }}>vs</div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{teamBName}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 4 }}>
+                {round.teamB.map((name, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSwapTarget({ team: "B", index: i })}
+                    style={{ background: "none", border: "none", color: LINE, textDecoration: "underline dotted", cursor: "pointer", fontSize: 14, fontWeight: 700, padding: 0 }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
               <div style={{ fontSize: 40, fontWeight: 800 }}>{round.scoreB ?? 0}</div>
             </div>
           </div>
@@ -714,6 +768,21 @@ function AmericanoScorer({ session, persist, shareBar }) {
         <p style={{ textAlign: "center", fontSize: 11.5, opacity: 0.5, marginTop: 20 }}>
           Anyone with this link can view and score this tournament live.
         </p>
+
+        {swapTarget && (
+          <PlayerSwapModal
+            playerName={
+              swapTarget.team === "A"
+                ? round.teamA[swapTarget.index]
+                : swapTarget.team === "B"
+                ? round.teamB[swapTarget.index]
+                : round.sitOut[swapTarget.index]
+            }
+            allPlayers={state.players}
+            onCancel={() => setSwapTarget(null)}
+            onConfirm={applySwap}
+          />
+        )}
       </div>
     </div>
   );
